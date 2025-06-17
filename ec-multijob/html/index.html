@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC MultiJob</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="multijob-container">
+        <div class="header">
+            <div class="header-left">
+                <i class="fas fa-briefcase"></i>
+                <h1>EC MultiJob</h1>
+            </div>
+            <div class="header-right">
+                <span class="close-btn"><i class="fas fa-times"></i></span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="current-job">
+                <div class="section-header">
+                    <h2><i class="fas fa-user-tie"></i> Current Job</h2>
+                </div>
+                <div class="current-job-card">
+                    <div id="current-job-info">
+                        <div class="job-title">
+                            <span id="job-name">Unemployed</span>
+                            <span id="job-grade">Civilian</span>
+                        </div>
+                        <div class="duty-status">
+                            <span id="duty-status-icon" class="status-icon off"><i class="fas fa-power-off"></i></span>
+                            <span id="duty-status-text">Off Duty</span>
+                        </div>
+                    </div>
+                    <button id="toggle-duty-btn" class="purple-btn">
+                        <i class="fas fa-exchange-alt"></i> Toggle Duty
+                    </button>
+                </div>
+            </div>
+            
+            <div class="job-list">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Your Jobs</h2>
+                    <span class="job-count"><span id="job-count">0</span> jobs</span>
+                </div>
+                <div id="jobs-container">
+                    <!-- Jobs will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
