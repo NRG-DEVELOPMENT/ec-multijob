@@ -1,23 +1,59 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+-- Detect framework
+local QBCore = nil
+local ESX = nil
+local framework = "unknown"
+
+-- Try to load QBCore
+local success = pcall(function()
+    QBCore = exports['qb-core']:GetCoreObject()
+    framework = "qbcore"
+end)
+
+-- If QBCore failed, try ESX
+if not success then
+    Citizen.CreateThread(function()
+        while ESX == nil do
+            TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+            Citizen.Wait(0)
+        end
+        framework = "esx"
+    end)
+end
+
+-- Debug message to show which framework is being used
+Citizen.CreateThread(function()
+    Citizen.Wait(2000) -- Wait to ensure framework detection is complete
+    print("^2[EC-MultiJob]^7 Client using framework: ^3" .. framework .. "^7")
+end)
+
 local PlayerData = {}
 local isUIOpen = false
 
 -- Initialize player data when player loads
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    PlayerData = QBCore.Functions.GetPlayerData()
-end)
-
--- Update player data when it changes
-RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
-    PlayerData.job = JobInfo
-end)
+if framework == "qbcore" then
+    RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+        PlayerData = QBCore.Functions.GetPlayerData()
+    end)
+    
+    RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
+        PlayerData.job = JobInfo
+    end)
+else
+    RegisterNetEvent('esx:playerLoaded', function(xPlayer)
+        PlayerData = xPlayer
+    end)
+    
+    RegisterNetEvent('esx:setJob', function(job)
+        PlayerData.job = job
+    end)
+end
 
 -- Function to toggle the UI
 function ToggleMultiJobUI()
     isUIOpen = not isUIOpen
     
     if isUIOpen then
-        -- Request jobs data from server using event instead of callback
+        -- Request jobs data from server using event
         TriggerServerEvent('ec-multijob:server:RequestPlayerJobs')
     else
         SetNuiFocus(false, false)
@@ -34,7 +70,8 @@ RegisterNetEvent('ec-multijob:client:ReceivePlayerJobs', function(jobs)
         SendNUIMessage({
             action = "open",
             jobs = jobs,
-            currentJob = PlayerData.job
+            currentJob = PlayerData.job,
+            framework = framework
         })
     end
 end)
@@ -60,6 +97,12 @@ end)
 
 RegisterNUICallback('toggleDuty', function(data, cb)
     TriggerServerEvent('ec-multijob:server:ToggleDuty')
+    cb('ok')
+end)
+
+-- Add new callback for removing job
+RegisterNUICallback('removeJob', function(data, cb)
+    TriggerServerEvent('ec-multijob:server:RemoveJob', data.jobId)
     cb('ok')
 end)
 

@@ -88,9 +88,23 @@ $(function() {
 
 function updateJobInfo(job) {
     $('#job-name').text(job.label || job.name);
-    $('#job-grade').text(job.grade.name);
     
-    if (job.onduty) {
+    // Handle different job structures between ESX and QBCore
+    if (job.grade && typeof job.grade === 'object' && job.grade.name) {
+        // QBCore format
+        $('#job-grade').text(job.grade.name);
+    } else if (job.grade_label) {
+        // ESX format
+        $('#job-grade').text(job.grade_label);
+    } else {
+        // Fallback
+        $('#job-grade').text('Grade ' + (job.grade || 0));
+    }
+    
+    // Handle duty status
+    const onDuty = job.onduty !== undefined ? job.onduty : false;
+    
+    if (onDuty) {
         $('#duty-status-icon').removeClass('off').addClass('on');
         $('#duty-status-text').text('On Duty');
         $('#toggle-duty-btn').html('<i class="fas fa-toggle-off"></i> Go Off Duty');
@@ -122,9 +136,16 @@ function populateJobs(jobs) {
                     <h3>${job.label || job.name}</h3>
                     <p>${job.gradeLabel || 'Grade ' + job.grade}</p>
                 </div>
-                <button class="switch-job-btn blue-btn" data-job="${job.name}" data-grade="${job.grade}">
-                    <i class="fas fa-sign-in-alt"></i> Switch
-                </button>
+                <div class="job-actions">
+                    <button class="switch-job-btn blue-btn" data-job="${job.name}" data-grade="${job.grade}">
+                        <i class="fas fa-sign-in-alt"></i> Switch
+                    </button>
+                    ${!isCurrentJob ? `
+                    <button class="remove-job-btn red-btn" data-id="${job.id}" data-job="${job.label || job.name}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    ` : ''}
+                </div>
             </div>
         `);
         
@@ -150,6 +171,64 @@ function populateJobs(jobs) {
             }));
             playButtonSound();
         }, 500);
+    });
+    
+    // Add click event for remove job buttons
+    $('.remove-job-btn').click(function() {
+        const jobId = $(this).data('id');
+        const jobName = $(this).data('job');
+        
+        // Show confirmation dialog
+        showConfirmDialog(
+            `Remove Job`,
+            `Are you sure you want to remove ${jobName} from your jobs?`,
+            () => {
+                $(this).html('<i class="fas fa-spinner fa-spin"></i>');
+                
+                setTimeout(() => {
+                    $.post('https://ec-multijob/removeJob', JSON.stringify({
+                        jobId: jobId
+                    }));
+                    playButtonSound();
+                }, 500);
+            }
+        );
+    });
+}
+
+// Add confirmation dialog function
+function showConfirmDialog(title, message, onConfirm) {
+    // Create dialog if it doesn't exist
+    if ($('#confirm-dialog').length === 0) {
+        $('body').append(`
+            <div id="confirm-dialog">
+                <div class="confirm-content">
+                    <h3 id="confirm-title"></h3>
+                    <p id="confirm-message"></p>
+                    <div class="confirm-buttons">
+                        <button id="confirm-yes" class="blue-btn">Yes</button>
+                        <button id="confirm-no" class="red-btn">No</button>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+    
+    // Set dialog content
+    $('#confirm-title').text(title);
+    $('#confirm-message').text(message);
+    
+    // Show dialog
+    $('#confirm-dialog').fadeIn(200);
+    
+    // Handle buttons
+    $('#confirm-yes').off('click').on('click', function() {
+        $('#confirm-dialog').fadeOut(200);
+        if (onConfirm) onConfirm();
+    });
+    
+    $('#confirm-no').off('click').on('click', function() {
+        $('#confirm-dialog').fadeOut(200);
     });
 }
 

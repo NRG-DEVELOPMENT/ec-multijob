@@ -208,6 +208,14 @@ button:active {
     background-color: var(--secondary-dark);
 }
 
+.red-btn {
+    background-color: var(--error);
+}
+
+.red-btn:hover {
+    background-color: #d32f2f;
+}
+
 .job-list {
     max-height: 400px;
     overflow-y: auto;
@@ -259,11 +267,59 @@ button:active {
     color: var(--text-secondary);
 }
 
+.job-actions {
+    display: flex;
+    gap: 5px;
+}
+
 .no-jobs {
     text-align: center;
     color: var(--text-secondary);
     padding: 20px;
     font-style: italic;
+}
+
+/* Confirmation Dialog */
+#confirm-dialog {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-content {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    padding: 20px;
+    width: 300px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--primary);
+}
+
+.confirm-content h3 {
+    margin-bottom: 10px;
+    color: var(--primary-light);
+}
+
+.confirm-content p {
+    margin-bottom: 20px;
+}
+
+.confirm-buttons {
+    display: flex;
+    justify-content: space-between;
+}
+
+.confirm-buttons button {
+    flex: 1;
+    margin: 0 5px;
 }
 
 /* Animations */

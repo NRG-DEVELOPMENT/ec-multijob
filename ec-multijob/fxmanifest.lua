@@ -1,9 +1,9 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'EC-MultiJob - Advanced Multiple Jobs Management for QBCore'
-author 'ECBetaSolutions'
-version '1.0.0'
+description 'EC-MultiJob - Advanced Multiple Jobs Management for QBCore and ESX'
+author 'NRG-Development'
+version '1.0.2'
 
 ui_page 'html/index.html'
 
