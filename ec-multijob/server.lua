@@ -17,22 +17,49 @@ if not success then
     end)
 end
 
+-- Debug message to show which framework is being used
 print("^2[EC-MultiJob]^7 Framework detected: ^3" .. framework .. "^7")
 
--- Create database table if it doesn't exist
+-- Create database table if it doesn't exist with proper AUTO_INCREMENT
 MySQL.ready(function()
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `player_jobs` (
-            `id` int(11) NOT NULL AUTO_INCREMENT,
-            `citizenid` varchar(50) NOT NULL,
-            `name` varchar(50) NOT NULL,
-            `grade` int(11) NOT NULL DEFAULT 0,
-            PRIMARY KEY (`id`),
-            KEY `citizenid` (`citizenid`),
-            KEY `name` (`name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged)
-        print("^2[EC-MultiJob]^7 Database table check completed")
+    -- First, check if the table exists
+    MySQL.Async.fetchAll("SHOW TABLES LIKE 'player_jobs'", {}, function(result)
+        if result and #result > 0 then
+            -- Table exists, check if we need to modify it
+            print("^2[EC-MultiJob]^7 Table player_jobs exists, checking structure...")
+            
+            -- Check if id column has AUTO_INCREMENT
+            MySQL.Async.fetchAll("SHOW COLUMNS FROM player_jobs LIKE 'id'", {}, function(columns)
+                if columns and #columns > 0 then
+                    local column = columns[1]
+                    if column.Extra and string.find(column.Extra, "auto_increment") then
+                        print("^2[EC-MultiJob]^7 Table structure is correct")
+                    else
+                        -- Fix the id column to have AUTO_INCREMENT
+                        print("^3[EC-MultiJob]^7 Fixing id column to have AUTO_INCREMENT...")
+                        MySQL.Async.execute("ALTER TABLE player_jobs MODIFY id INT NOT NULL AUTO_INCREMENT", {}, function()
+                            print("^2[EC-MultiJob]^7 Table structure fixed successfully")
+                        end)
+                    end
+                end
+            end)
+        else
+            -- Table doesn't exist, create it with proper structure
+            print("^3[EC-MultiJob]^7 Creating player_jobs table...")
+            MySQL.Async.execute([[
+                CREATE TABLE `player_jobs` (
+                    `id` INT NOT NULL AUTO_INCREMENT,
+                    `citizenid` VARCHAR(50) NOT NULL,
+                    `name` VARCHAR(50) NOT NULL,
+                    `grade` INT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (`id`),
+                    INDEX `citizenid` (`citizenid`),
+                    INDEX `name` (`name`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ]], {}, function()
+                print("^2[EC-MultiJob]^7 Table player_jobs created successfully")
+            end)
+        end
     end)
 end)
 
