@@ -37,6 +37,10 @@ if framework == "qbcore" then
     
     RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
         PlayerData.job = JobInfo
+        -- Update UI if it's open
+        if isUIOpen then
+            TriggerServerEvent('ec-multijob:server:RequestPlayerJobs')
+        end
     end)
 else
     RegisterNetEvent('esx:playerLoaded', function(xPlayer)
@@ -45,6 +49,10 @@ else
     
     RegisterNetEvent('esx:setJob', function(job)
         PlayerData.job = job
+        -- Update UI if it's open
+        if isUIOpen then
+            TriggerServerEvent('ec-multijob:server:RequestPlayerJobs')
+        end
     end)
 end
 
@@ -126,3 +134,15 @@ RegisterNetEvent('ec-multijob:client:PlaySwitchAnimation', function()
     Wait(800)
     ClearPedTasks(playerPed)
 end)
+
+if framework == "qbcore" then
+    RegisterNetEvent('QBCore:Client:OnJobUpdate', function(jobInfo)
+        TriggerServerEvent('ec-multijob:server:JobUpdated', jobInfo)
+    end)
+else
+    -- ESX version of job update tracking
+    RegisterNetEvent('esx:setJob', function(job, lastJob)
+        TriggerServerEvent('ec-multijob:server:JobUpdated', job, lastJob)
+    end)
+end
+

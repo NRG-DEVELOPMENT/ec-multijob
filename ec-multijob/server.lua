@@ -538,6 +538,52 @@ if framework == "qbcore" then
             end)
         end
     end)
+    
+    -- Track job changes in QBCore
+    RegisterNetEvent('QBCore:Server:OnJobUpdate', function(source, newJob)
+        local src = source
+        local Player = QBCore.Functions.GetPlayer(src)
+        
+        if Player then
+            local citizenid = Player.PlayerData.citizenid
+            local jobName = newJob.name
+            local jobGrade = newJob.grade.level
+            
+            -- If job is unemployed, it means the player was fired
+            if jobName == "unemployed" then
+                -- Find the previous job and remove it
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name != ?', 
+                    {citizenid, "unemployed"}, 
+                    function(result)
+                        if result and #result > 0 then
+                            for _, job in ipairs(result) do
+                                -- Delete all jobs except unemployed
+                                MySQL.Async.execute('DELETE FROM player_jobs WHERE id = ?', {job.id})
+                            end
+                        end
+                    end
+                )
+            else
+                -- Check if job exists in database and update or add it
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, jobName}, 
+                    function(result)
+                        if result and #result > 0 then
+                            -- Update existing job grade
+                            MySQL.Async.execute('UPDATE player_jobs SET grade = ? WHERE citizenid = ? AND name = ?', 
+                                {jobGrade, citizenid, jobName}
+                            )
+                        else
+                            -- Add new job
+                            MySQL.Async.insert('INSERT INTO player_jobs (citizenid, name, grade) VALUES (?, ?, ?)', 
+                                {citizenid, jobName, jobGrade}
+                            )
+                        end
+                    end
+                )
+            end
+        end
+    end)
 else
     -- ESX version of player loaded event
     RegisterNetEvent('esx:playerLoaded', function(playerId, xPlayer)
@@ -556,4 +602,113 @@ else
             end
         end)
     end)
+    
+    -- Track job changes in ESX
+    RegisterNetEvent('esx:setJob', function(source, job, lastJob)
+        local src = source
+        local xPlayer = ESX.GetPlayerFromId(src)
+        
+        if xPlayer then
+            local citizenid = xPlayer.identifier
+            local jobName = job.name
+            local jobGrade = job.grade
+            
+            -- If job is unemployed, it means the player was fired
+            if jobName == "unemployed" then
+                -- Find the previous job and remove it
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, lastJob.name}, 
+                    function(result)
+                        if result and #result > 0 then
+                            -- Delete the previous job
+                            MySQL.Async.execute('DELETE FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                                {citizenid, lastJob.name}
+                            )
+                        end
+                    end
+                )
+            else
+                -- Check if job exists in database and update or add it
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, jobName}, 
+                    function(result)
+                        if result and #result > 0 then
+                            -- Update existing job grade
+                            MySQL.Async.execute('UPDATE player_jobs SET grade = ? WHERE citizenid = ? AND name = ?', 
+                                {jobGrade, citizenid, jobName}
+                            )
+                        else
+                            -- Add new job
+                            MySQL.Async.insert('INSERT INTO player_jobs (citizenid, name, grade) VALUES (?, ?, ?)', 
+                                {citizenid, jobName, jobGrade}
+                            )
+                        end
+                    end
+                )
+            end
+        end
+    end)
 end
+-- Event to handle job updates from the core framework
+RegisterNetEvent('ec-multijob:server:JobUpdated', function(newJob, lastJob)
+    local src = source
+    local citizenid
+    
+    if framework == "qbcore" then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if Player then
+            citizenid = Player.PlayerData.citizenid
+            
+            -- If job is unemployed, it means the player was fired
+            if newJob.name == "unemployed" then
+                -- Remove the previous job from the database
+                MySQL.Async.execute('DELETE FROM player_jobs WHERE citizenid = ? AND name != ?', 
+                    {citizenid, "unemployed"}
+                )
+            else
+                -- Update or add the job in the database
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, newJob.name}, 
+                    function(result)
+                        if result and #result > 0 then
+                            MySQL.Async.execute('UPDATE player_jobs SET grade = ? WHERE citizenid = ? AND name = ?', 
+                                {newJob.grade.level, citizenid, newJob.name}
+                            )
+                        else
+                            MySQL.Async.insert('INSERT INTO player_jobs (citizenid, name, grade) VALUES (?, ?, ?)', 
+                                {citizenid, newJob.name, newJob.grade.level}
+                            )
+                        end
+                    end
+                )
+            end
+        end
+    elseif framework == "esx" then
+        local xPlayer = ESX.GetPlayerFromId(src)
+        if xPlayer then
+            citizenid = xPlayer.identifier
+            
+            if newJob.name == "unemployed" and lastJob then
+                MySQL.Async.execute('DELETE FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, lastJob.name}
+                )
+            else
+                -- Update or add the job in the database
+                MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ? AND name = ?', 
+                    {citizenid, newJob.name}, 
+                    function(result)
+                        if result and #result > 0 then
+                            MySQL.Async.execute('UPDATE player_jobs SET grade = ? WHERE citizenid = ? AND name = ?', 
+                                {newJob.grade, citizenid, newJob.name}
+                            )
+                        else
+                            MySQL.Async.insert('INSERT INTO player_jobs (citizenid, name, grade) VALUES (?, ?, ?)', 
+                                {citizenid, newJob.name, newJob.grade}
+                            )
+                        end
+                    end
+                )
+            end
+        end
+    end
+end)

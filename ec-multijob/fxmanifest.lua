@@ -3,7 +3,7 @@ game 'gta5'
 
 description 'EC-MultiJob - Advanced Multiple Jobs Management for QBCore and ESX'
 author 'NRG-Development'
-version '1.0.2'
+version '1.0.3'
 
 ui_page 'html/index.html'
 
