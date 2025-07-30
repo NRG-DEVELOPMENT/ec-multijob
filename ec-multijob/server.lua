@@ -64,7 +64,6 @@ MySQL.ready(function()
 end)
 
 
--- Event to get player's jobs
 RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
     local src = source
     local citizenid
@@ -86,7 +85,6 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
         return
     end
     
-    -- Get jobs from database
     MySQL.Async.fetchAll('SELECT * FROM player_jobs WHERE citizenid = ?', {citizenid}, function(result)
         local jobs = {}
         
@@ -96,19 +94,17 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
                     id = job.id,
                     name = job.name,
                     grade = tonumber(job.grade),
-                    label = job.name, -- Default label
-                    gradeLabel = "Grade " .. job.grade -- Default grade label
+                    label = job.name,
+                    gradeLabel = "Grade " .. job.grade
                 }
                 
-                -- Add job details based on framework
                 if framework == "qbcore" and QBCore.Shared.Jobs[job.name] then
                     jobData.label = QBCore.Shared.Jobs[job.name].label
                     if QBCore.Shared.Jobs[job.name].grades[tonumber(job.grade)] then
                         jobData.gradeLabel = QBCore.Shared.Jobs[job.name].grades[tonumber(job.grade)].name
                     end
                 elseif framework == "esx" then
-                    -- Get job info from ESX
-                    local ESXJobs = ESX.GetJobs()
+                    local ESXJobs = ESX.GetJobs and ESX.GetJobs() or {}
                     if ESXJobs[job.name] then
                         jobData.label = ESXJobs[job.name].label
                         if ESXJobs[job.name].grades[tonumber(job.grade)] then
@@ -121,7 +117,6 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
             end
         end
         
-        -- Add current job if it's not already in the list
         local currentJobName, currentJobGrade, currentJobLabel, currentGradeLabel
         
         if framework == "qbcore" then
@@ -136,8 +131,7 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
             currentJobGrade = xPlayer.job.grade
             currentJobLabel = xPlayer.job.label
             
-            -- Get grade label from ESX
-            local ESXJobs = ESX.GetJobs()
+            local ESXJobs = ESX.GetJobs and ESX.GetJobs() or {}
             if ESXJobs[currentJobName] and ESXJobs[currentJobName].grades[currentJobGrade] then
                 currentGradeLabel = ESXJobs[currentJobName].grades[currentJobGrade].name
             else
@@ -145,7 +139,6 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
             end
         end
         
-        -- Check if current job is in the list
         local currentJobFound = false
         for _, job in ipairs(jobs) do
             if job.name == currentJobName then
@@ -155,7 +148,6 @@ RegisterNetEvent('ec-multijob:server:RequestPlayerJobs', function()
         end
         
         if not currentJobFound and currentJobName ~= "unemployed" then
-            -- Add current job to database and job list
             MySQL.Async.insert('INSERT INTO player_jobs (citizenid, name, grade) VALUES (?, ?, ?)', 
                 {citizenid, currentJobName, currentJobGrade}
             )
