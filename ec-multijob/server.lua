@@ -253,7 +253,6 @@ RegisterNetEvent('ec-multijob:server:ToggleDuty', function()
         local xPlayer = ESX.GetPlayerFromId(src)
         
         if xPlayer then
-            -- ESX doesn't have built-in duty system, so we'll use metadata
             local onDuty = xPlayer.get('onDuty') or false
             xPlayer.set('onDuty', not onDuty)
             
